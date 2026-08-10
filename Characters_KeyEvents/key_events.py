@@ -11,6 +11,7 @@ rocket_rect = pygame.Rect(WIDTH/2,HEIGHT/2,50,100)
 rocket = pygame.image.load(r"C:\Users\samra\Desktop\JetLearn\Pro-Game Development\Characters_KeyEvents\images\rocket.png")
 rocket = pygame.transform.scale(rocket,(50,100))
 
+directions = {"up":False, "down":False, "left":False, "right":False}
 run=True
 
 while run:
@@ -24,8 +25,25 @@ while run:
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
-                rocket_rect.y = rocket_rect.y - 10
-        
+               # rocket_rect.y = rocket_rect.y - 10    
+               directions ["up"] = True    
 
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_UP:
+                directions ["up"] = False                             
+        
+    if directions ["up"]:
+        rocket_rect.y -= 1
+    #Direct way of continuous movement
+    keys = pygame.key.get_pressed()
+    print (keys)
+    if keys [pygame.K_DOWN]:
+        rocket_rect.y += 1
+
+    if keys [pygame.K_RIGHT]:
+            rocket_rect.x += 1
+
+    if keys [pygame.K_LEFT]:
+            rocket_rect.x -= 1
 
 pygame.quit()
