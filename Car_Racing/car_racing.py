@@ -1,5 +1,35 @@
 import pygame
 import random
+import os
+
+SAVE_FILE = "players.txt"
+
+def load_players():
+    players = {}
+    if os.path.exists(SAVE_FILE):
+        with open(SAVE_FILE, "r") as f:
+            for line in f:
+                if "," in line:
+                    name, score = line.strip().split(",")
+                    players[name] = int(score)
+    return players
+
+def save_players(players):
+    with open(SAVE_FILE, "w") as f:
+        for name, score in players.items():
+            f.write(f"{name},{score}\n")
+
+players = load_players()
+username = input("Enter username: ")
+
+if username not in players:
+    players[username] = 0
+else:
+    print("Welcome back,", username)
+    print("Highscore:", players[username])
+
+player_highscore = players[username]
+
 pygame.init()
 WIDTH = 600
 HEIGHT = 800
@@ -26,6 +56,13 @@ road_img = pygame.transform.scale(road_img, (WIDTH, HEIGHT))
 car_width = 70
 car_height = 130
 
+background_music = pygame.mixer.Sound(r"C:\Users\samra\Desktop\JetLearn\Pro-Game Development\Car_Racing\bg_music.wav")
+crash_sound = pygame.mixer.Sound(r"C:\Users\samra\Desktop\JetLearn\Pro-Game Development\Car_Racing\car_crash.mp3")
+
+road_img = pygame.transform.scale(road_img, (WIDTH, HEIGHT))
+car_width = 70
+car_height = 130
+
 blue_car_img = pygame.transform.scale(blue_car_img, (car_width, car_height))
 red_car_img = pygame.transform.scale(red_car_img, (car_width, car_height))
 red_car_img = pygame.transform.rotate(red_car_img, 180)
@@ -36,10 +73,14 @@ green_car_img = pygame.transform.rotate(green_car_img, 180)
 explosion_img = pygame.transform.scale(explosion_img, (100, 100))
 smoke_img = pygame.transform.scale(smoke_img, (80, 80))
 
-enemy_images = [red_car_img, yellow_car_img,green_car_img]
+enemy_images = [red_car_img, yellow_car_img, green_car_img]
 lane_width = WIDTH // 3
-lane_y = HEIGHT - 150   
-lane_x_positions = [lane_width * 0.5 - car_width // 2 + 30,lane_width * 1.5 - car_width // 2 + 15,lane_width * 2.5 - car_width // 2]
+lane_y = HEIGHT - 150
+lane_x_positions = [
+    lane_width * 0.5 - car_width // 2 + 30,
+    lane_width * 1.5 - car_width // 2 + 15,
+    lane_width * 2.5 - car_width // 2
+]
 
 player_lane = 1
 player_rect = blue_car_img.get_rect()
@@ -52,10 +93,10 @@ road_speed = 6
 
 enemies = []
 spawn_timer = 0
-spawn_interval = 40   
+spawn_interval = 40
 
 score = 0
-lives = 5             
+lives = 5
 game_over = False
 explosion_timer = 0
 smoke_timer = 0
@@ -68,7 +109,7 @@ def spawn_enemy():
     rect.y = -150
     base_min = 8
     base_max = 12
-    speed = random.randint(base_min + score // 300,base_max + score // 300)
+    speed = random.randint(base_min + score // 300, base_max + score // 300)
     enemies.append([img, rect, speed])
 
 def reset_game():
@@ -83,7 +124,7 @@ def reset_game():
     player_lane = 1
     player_rect.centerx = lane_x_positions[player_lane]
     player_rect.centery = lane_y
-
+    background_music.play(-1)
 
 running = True
 reset_game()
@@ -100,7 +141,6 @@ while running:
                 if event.key == pygame.K_LEFT and player_lane > 0:
                     player_lane -= 1
                     player_rect.centerx = lane_x_positions[player_lane]
-
                 if event.key == pygame.K_RIGHT and player_lane < 2:
                     player_lane += 1
                     player_rect.centerx = lane_x_positions[player_lane]
@@ -119,23 +159,28 @@ while running:
 
     if not game_over:
         score += 1
-
         spawn_timer += 1
         if spawn_timer >= spawn_interval:
             spawn_enemy()
             spawn_timer = 0
+
         for enemy in enemies[:]:
             enemy[1].y += enemy[2]
             if enemy[1].top > HEIGHT:
                 enemies.remove(enemy)
+
         for enemy in enemies[:]:
             if enemy[1].colliderect(player_rect):
+                crash_sound.play()
                 enemies.remove(enemy)
                 lives -= 1
                 explosion_timer = 20
                 smoke_timer = 40
                 if lives <= 0:
                     game_over = True
+                    if score > player_highscore:
+                        players[username] = score
+                        save_players(players)
 
     screen.blit(road_img, (0, road_y1))
     screen.blit(road_img, (0, road_y2))
@@ -159,8 +204,12 @@ while running:
     pygame.draw.rect(screen, GREY, hud)
     score_text = font_small.render("Score: " + str(score), True, WHITE)
     lives_text = font_small.render("Lives: " + str(lives), True, WHITE)
+    highscore_text = font_small.render("High Score: " + str(player_highscore), True, WHITE)
+
     screen.blit(score_text, (20, 10))
     screen.blit(lives_text, (WIDTH - 150, 10))
+    screen.blit(highscore_text, (WIDTH//2 - 80, 10))
+
     if game_over:
         overlay = pygame.Surface((WIDTH, HEIGHT))
         overlay.fill(BLACK)
@@ -175,8 +224,12 @@ while running:
 
         hint = font_small.render("Press R to Restart", True, GREY)
         screen.blit(hint, (WIDTH//2 - hint.get_width()//2, HEIGHT//2 + 60))
+
     pygame.display.update()
+
 pygame.quit()
+
+
 
 
 
